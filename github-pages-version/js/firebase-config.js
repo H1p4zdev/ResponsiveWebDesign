@@ -1,21 +1,21 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+/**
+ * Firebase Configuration
+ * 
+ * This file contains your Firebase project credentials.
+ * Replace these values with your actual Firebase project settings.
+ * Do not commit this file with real credentials to public repositories.
+ */
+
 const firebaseConfig = {
-  ,
-  authDomain: "esports-hp.firebaseapp.com",
-  projectId: "esports-hp",
-  storageBucket: "esports-hp.firebasestorage.app",
-  messagingSenderId: "578218788593",
-  appId: "1:578218788593:web:995d61bdbbfe374bf6cb50",
-  measurementId: "G-ELP77R773B"
+  apiKey: "YOUR_FIREBASE_API_KEY",
+  authDomain: "YOUR_FIREBASE_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_FIREBASE_PROJECT_ID",
+  storageBucket: "YOUR_FIREBASE_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_FIREBASE_APP_ID",
+  measurementId: "YOUR_MEASUREMENT_ID" // Optional, only if using Google Analytics
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+// Export the config for use in firebase.js
+// The actual Firebase initialization happens in firebase.js
