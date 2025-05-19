@@ -1,0 +1,58 @@
+> Build a responsive and interactive web app using **HTML, CSS (with Flexbox or Grid), and Vanilla JavaScript** (no frameworks), suitable for **GitHub Pages** hosting. Follow **Material 3 design** principles.
+>
+> This app is for organizing **Free Fire tournaments** and includes the following key features:
+>
+> ### Core Pages/Sections:
+> 
+> 1. **Home Page**
+>    - Hero banner
+>    - Short intro about Free Fire tournaments
+>    - Call-to-action buttons
+>
+> 2. **Tournaments Page**
+>    - Display a list of upcoming tournaments (use sample JSON or localStorage data)
+>    - Show: name, date, time, prize pool, entry fee, rules, and status (Upcoming / Ongoing / Completed)
+>    - Filter/sort options (by date, entry fee, status)
+>
+> 3. **Register Page**
+>    - Registration form: Name, Free Fire ID, team name, email, contact
+>    - Validate input
+>    - Store data in `localStorage`
+>    - Show success message after registration
+>
+> 4. **Results Page**
+>    - List of completed tournaments with top 3 winners
+>    - Show scores or screenshots (if available)
+>
+> 5. **Login Page**
+>    - Firebase Authentication (Google Sign-In, Email/Password)
+>    - Show logged-in user’s name/email
+>    - "Logout" button to sign out
+>
+> 6. **Admin (Optional)**
+>    - Protected by Firebase Auth (only allow certain emails)
+>    - Add/edit/delete tournaments (saved to `localStorage`)
+>
+> ---
+>
+> ### Requirements:
+>
+> - Use only **HTML, CSS, JS** (no React/Vue/Angular)
+> - Follow **Material 3 design** for layout, colors, and components
+> - Use **Firebase Auth** for login (Google Sign-In and Email/Password)
+> - Use **localStorage** to simulate backend (tournaments, registrations, results)
+> - Fully responsive (mobile-first)
+> - Use **Material Icons** or any free icon set
+> - Keep code clean and modular (separate files: `index.html`, `style.css`, `main.js`, etc.)
+>
+> ---
+>
+> ### Bonus Features (if possible):
+>
+> - Dark mode toggle
+> - Notification banner (e.g. “Next tournament starts in 2 days!”)
+> - Countdown timer for the next tournament
+> - Export registrations as CSV (from localStorage)
+> - Progress bar for page loading or form submission
+>
+> Final output should be a **static site**, ready to deploy on **GitHub Pages**.
