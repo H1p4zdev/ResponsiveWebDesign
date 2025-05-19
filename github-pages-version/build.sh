@@ -29,6 +29,13 @@ for jsfile in js/*.js; do
   minify "$jsfile" > "$BUILD_DIR/js/$filename"
 done
 
+# Ensure firebase.js is properly included
+echo "Ensuring Firebase configuration is properly set up..."
+if [ ! -f "$BUILD_DIR/js/firebase.js" ]; then
+  echo "Warning: firebase.js was not found in the build. Copying it now."
+  cp js/firebase.js $BUILD_DIR/js/
+fi
+
 # Copy other necessary files
 echo "Copying additional files..."
 cp README.md $BUILD_DIR/
