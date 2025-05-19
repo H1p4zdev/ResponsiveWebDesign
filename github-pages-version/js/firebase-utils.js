@@ -1,158 +1,181 @@
-// Firebase utilities and helper functions
-// This file provides helper functions for common Firebase operations
+/**
+ * Firebase Utilities
+ * 
+ * Additional helper functions for Firebase operations.
+ * These utilities complement the main Firebase functionality.
+ */
 
-// Firebase user state management
-const FirebaseUserManager = {
-  // Store user data in localStorage
-  storeUserData: function(user) {
-    if (!user) return;
-    
-    const userData = {
-      uid: user.uid,
-      displayName: user.displayName || user.email.split('@')[0],
+// Local authentication fallback for when Firebase is not available
+function signInWithLocalStorage(email, password) {
+  console.log('Attempting localStorage authentication fallback');
+  
+  // Get users from local storage
+  const users = getUsers();
+  
+  // Find user with matching email and password
+  const user = users.find(u => u.email === email && u.password === password);
+  
+  if (user) {
+    // Create a user object that mimics Firebase user object
+    const fakeFirebaseUser = {
+      uid: user.id,
       email: user.email,
-      photoURL: user.photoURL,
-      isLoggedIn: true
+      displayName: user.name,
+      photoURL: null,
+      isAdmin: user.role === 'admin'
     };
     
-    localStorage.setItem('user', JSON.stringify(userData));
-    return userData;
-  },
-  
-  // Clear user data from localStorage
-  clearUserData: function() {
-    localStorage.removeItem('user');
-  },
-  
-  // Get stored user data
-  getStoredUserData: function() {
-    return JSON.parse(localStorage.getItem('user') || 'null');
-  },
-  
-  // Check if user is admin
-  isUserAdmin: function(user) {
-    // You can implement your own admin check logic here
-    // For example, check against a list of admin emails or admin roles
-    return user && user.email === 'admin@example.com';
+    // Save to localStorage
+    localStorage.setItem('fireUser', JSON.stringify(fakeFirebaseUser));
+    
+    // Update UI
+    updateUIForSignedInUser(fakeFirebaseUser);
+    
+    console.log('Local authentication successful');
+    showToast('Login successful!');
+    
+    // Redirect to home page
+    navigateTo('home');
+    return true;
+  } else {
+    console.error('Local authentication failed: Invalid credentials');
+    showToast('Invalid email or password', 'error');
+    return false;
   }
-};
+}
 
-// Firebase authentication UI helper
-const FirebaseAuthUI = {
-  // Update UI based on authentication state
-  updateAuthUI: function(user) {
-    const userSection = document.getElementById('userSection');
-    const mobileUserItem = document.querySelector('.nav-item[data-navigate="login"]');
-    
-    if (!userSection) return;
-    
-    if (user && user.isLoggedIn) {
-      // Update header user section for logged in user
-      userSection.innerHTML = `
-        <div class="flex items-center">
-          <span class="mr-2">${user.displayName}</span>
-          <button class="material-btn-outlined" id="logout-button">
-            <span class="material-icons mr-1">logout</span>
-            Logout
-          </button>
-        </div>
-      `;
-      
-      // Update mobile nav if it exists
-      if (mobileUserItem) {
-        mobileUserItem.innerHTML = `
-          <span class="material-icons">person</span>
-          <span class="text-xs">Profile</span>
-        `;
-      }
-      
-      // Add logout event listener
-      const logoutButton = document.getElementById('logout-button');
-      if (logoutButton) {
-        logoutButton.addEventListener('click', function() {
-          FirebaseAuth.signOut()
-            .then(() => {
-              // Sign-out successful
-              FirebaseUserManager.clearUserData();
-              window.location.reload();
-            })
-            .catch(error => {
-              console.error('Logout error:', error);
-              showToast('Logout failed: ' + error.message, 'error');
-            });
-        });
-      }
-      
-      // Show admin section if user is admin
-      if (FirebaseUserManager.isUserAdmin(user)) {
-        document.querySelectorAll('[data-navigate="admin"]').forEach(el => {
-          el.classList.remove('hidden');
-        });
-      }
-    } else {
-      // Show login button for logged out user
-      userSection.innerHTML = `
-        <a href="#" class="material-btn-primary" data-navigate="login">
-          <span class="material-icons mr-1">login</span>
-          Login
-        </a>
-      `;
-      
-      // Update mobile nav if it exists
-      if (mobileUserItem) {
-        mobileUserItem.innerHTML = `
-          <span class="material-icons">person</span>
-          <span class="text-xs">Login</span>
-        `;
-      }
-      
-      // Hide admin section
-      document.querySelectorAll('[data-navigate="admin"]').forEach(el => {
-        el.classList.add('hidden');
-      });
-    }
-    
-    // Re-attach navigation handlers
-    document.querySelectorAll('[data-navigate]').forEach(link => {
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
-        navigateTo(link.getAttribute('data-navigate'));
-      });
-    });
-  },
+// Create local user when Firebase is not available
+function createLocalUser(name, email, password) {
+  console.log('Creating local user as Firebase fallback');
   
-  // Initialize auth UI with stored user data (for page reloads)
-  initAuthUI: function() {
-    const userData = FirebaseUserManager.getStoredUserData();
-    if (userData) {
-      this.updateAuthUI(userData);
-    } else {
-      this.updateAuthUI(null);
-    }
+  // Get existing users
+  const users = getUsers();
+  
+  // Check if user with this email already exists
+  if (users.find(u => u.email === email)) {
+    console.error('Local user creation failed: Email already in use');
+    showToast('Email already in use', 'error');
+    return false;
   }
-};
+  
+  // Create new user
+  const newUser = {
+    id: generateId('user_'),
+    name: name,
+    email: email,
+    password: password, // Note: In a real app, you'd hash this password
+    role: 'user',
+    registeredDate: new Date().toISOString()
+  };
+  
+  // Add to users array
+  users.push(newUser);
+  
+  // Save updated users array
+  saveUsers(users);
+  
+  // Log in the new user
+  signInWithLocalStorage(email, password);
+  
+  console.log('Local user created successfully');
+  showToast('Account created successfully!');
+  
+  // Redirect to home page
+  navigateTo('home');
+  return true;
+}
 
-// Set up auth state listener when DOM is loaded
+// Check for authentication when page loads (local storage fallback)
+function checkLocalAuthState() {
+  const userData = localStorage.getItem('fireUser');
+  
+  if (userData) {
+    const user = JSON.parse(userData);
+    updateUIForSignedInUser(user);
+    return user;
+  }
+  
+  return null;
+}
+
+// Update mobile menu with user state
+function updateMobileMenu(user) {
+  const mobileNavLogin = document.querySelector('.mobile-nav [data-navigate="login"]');
+  
+  if (!mobileNavLogin) return;
+  
+  if (user) {
+    // User is logged in, show profile option
+    mobileNavLogin.innerHTML = `
+      <span class="material-icons">person</span>
+      <span class="text-xs">Profile</span>
+    `;
+    mobileNavLogin.setAttribute('data-navigate', 'profile');
+  } else {
+    // User is logged out, show login option
+    mobileNavLogin.innerHTML = `
+      <span class="material-icons">login</span>
+      <span class="text-xs">Login</span>
+    `;
+    mobileNavLogin.setAttribute('data-navigate', 'login');
+  }
+}
+
+// Event handler for tournament registration
+function handleTournamentRegistration(tournamentId) {
+  // Check if user is logged in
+  const user = getUserFromLocalStorage();
+  
+  if (!user) {
+    // Not logged in, redirect to login page
+    showToast('Please log in to register for tournaments', 'info');
+    navigateTo('login');
+    return;
+  }
+  
+  // User is logged in, redirect to registration page
+  navigateTo('register');
+  
+  // Pre-select the tournament in the registration form
+  const tournamentSelect = document.getElementById('tournamentSelect');
+  if (tournamentSelect) {
+    tournamentSelect.value = tournamentId;
+    // Trigger change event to update form fields
+    const event = new Event('change');
+    tournamentSelect.dispatchEvent(event);
+  }
+}
+
+// Format timestamp from Firebase to readable date
+function formatFirebaseTimestamp(timestamp) {
+  if (!timestamp) return '';
+  
+  // Convert Firebase timestamp to Date object
+  let date;
+  if (timestamp.toDate && typeof timestamp.toDate === 'function') {
+    // Firestore Timestamp
+    date = timestamp.toDate();
+  } else if (timestamp._seconds !== undefined) {
+    // Serialized Firestore Timestamp
+    date = new Date(timestamp._seconds * 1000);
+  } else if (typeof timestamp === 'string') {
+    // ISO string
+    date = new Date(timestamp);
+  } else if (typeof timestamp === 'number') {
+    // Milliseconds
+    date = new Date(timestamp);
+  } else {
+    // Assume it's already a Date
+    date = timestamp;
+  }
+  
+  return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+}
+
+// Initialize utilities when document is loaded
 document.addEventListener('DOMContentLoaded', function() {
-  // Initialize auth UI with stored user data
-  FirebaseAuthUI.initAuthUI();
-  
-  // Set up auth state listener if Firebase is initialized
-  if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
-    FirebaseAuth.onAuthStateChanged(user => {
-      if (user) {
-        // User is signed in
-        const userData = FirebaseUserManager.storeUserData(user);
-        FirebaseAuthUI.updateAuthUI(userData);
-      } else {
-        // User is signed out
-        FirebaseUserManager.clearUserData();
-        FirebaseAuthUI.updateAuthUI(null);
-      }
-    });
+  // Check local auth state as fallback
+  if (typeof firebase === 'undefined' || !firebase.apps.length) {
+    checkLocalAuthState();
   }
 });
-
-// Make Firebase utilities available globally
-window.FirebaseUserManager = FirebaseUserManager;
-window.FirebaseAuthUI = FirebaseAuthUI;

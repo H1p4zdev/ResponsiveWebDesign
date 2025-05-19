@@ -1,73 +1,227 @@
-// Firebase configuration and initialization
-// This file centralizes all Firebase-related functionality
+/**
+ * Firebase Implementation
+ * 
+ * This file handles Firebase authentication and related functionality.
+ * The Firebase configuration is imported from firebase-config.js
+ */
 
-// Firebase configuration - Replace these values with your Firebase project's values
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY", // Replace with your actual Firebase API key
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com", // Replace with your project ID
-  projectId: "YOUR_PROJECT_ID", // Replace with your project ID
-  storageBucket: "YOUR_PROJECT_ID.appspot.com", // Replace with your project ID
-  messagingSenderId: "123456789012", // Replace with your sender ID if available
-  appId: "YOUR_APP_ID" // Replace with your app ID
-};
+// Firebase configuration is loaded from firebase-config.js
+// Make sure firebase-config.js is included before this file in your HTML
 
 // Initialize Firebase
-function initFirebase() {
-  // Check if Firebase SDK is loaded
-  if (typeof firebase !== 'undefined') {
-    // Initialize Firebase
+let firebaseInitialized = false;
+
+function initializeFirebase() {
+  if (typeof firebase !== 'undefined' && !firebaseInitialized) {
     firebase.initializeApp(firebaseConfig);
-    console.log('Firebase initialized successfully');
+    firebaseInitialized = true;
+    console.log('Firebase initialized');
+    
+    // Set up authentication state listener
+    firebase.auth().onAuthStateChanged(handleAuthStateChange);
+    
     return true;
+  }
+  return false;
+}
+
+// Authentication state handler
+function handleAuthStateChange(user) {
+  if (user) {
+    // User is signed in
+    console.log('User signed in:', user.email);
+    saveUserToLocalStorage(user);
+    updateUIForSignedInUser(user);
   } else {
-    console.error('Firebase SDK not loaded');
-    return false;
+    // User is signed out
+    console.log('User signed out');
+    clearUserFromLocalStorage();
+    updateUIForSignedOutUser();
   }
 }
 
-// Firebase Authentication helper functions
-const FirebaseAuth = {
-  // Get current user
-  getCurrentUser: function() {
-    return firebase.auth().currentUser;
-  },
+// Save user data to localStorage
+function saveUserToLocalStorage(user) {
+  if (!user) return;
+  
+  const userData = {
+    uid: user.uid,
+    email: user.email,
+    displayName: user.displayName || user.email.split('@')[0],
+    photoURL: user.photoURL,
+    isAdmin: user.email === 'admin@example.com' // Simple admin check
+  };
+  
+  localStorage.setItem('fireUser', JSON.stringify(userData));
+}
 
-  // Sign in with Google
-  signInWithGoogle: function() {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    return firebase.auth().signInWithPopup(provider);
-  },
+// Clear user data from localStorage
+function clearUserFromLocalStorage() {
+  localStorage.removeItem('fireUser');
+}
 
-  // Sign in with email and password
-  signInWithEmail: function(email, password) {
-    return firebase.auth().signInWithEmailAndPassword(email, password);
-  },
+// Get user data from localStorage
+function getUserFromLocalStorage() {
+  const userData = localStorage.getItem('fireUser');
+  return userData ? JSON.parse(userData) : null;
+}
 
-  // Create user with email and password
-  createUserWithEmail: function(email, password) {
-    return firebase.auth().createUserWithEmailAndPassword(email, password);
-  },
-
-  // Update user profile
-  updateProfile: function(user, data) {
-    return user.updateProfile(data);
-  },
-
-  // Sign out
-  signOut: function() {
-    return firebase.auth().signOut();
-  },
-
-  // Set auth state change listener
-  onAuthStateChanged: function(callback) {
-    return firebase.auth().onAuthStateChanged(callback);
+// Update UI elements for signed-in user
+function updateUIForSignedInUser(user) {
+  const userSection = document.getElementById('userSection');
+  if (!userSection) return;
+  
+  const userData = user.providerData ? user : getUserFromLocalStorage();
+  if (!userData) return;
+  
+  const displayName = userData.displayName || userData.email.split('@')[0];
+  
+  userSection.innerHTML = `
+    <div class="flex items-center">
+      <span class="mr-2">${displayName}</span>
+      <button class="material-btn-outlined" id="logout-button">
+        <span class="material-icons mr-1">logout</span>
+        Logout
+      </button>
+    </div>
+  `;
+  
+  // Add logout handler
+  document.getElementById('logout-button').addEventListener('click', signOut);
+  
+  // Show admin section if applicable
+  if (userData.isAdmin || userData.email === 'admin@example.com') {
+    document.querySelectorAll('[data-navigate="admin"]').forEach(el => {
+      el.classList.remove('hidden');
+    });
   }
-};
+}
 
-// Initialize Firebase on page load
+// Update UI elements for signed-out user
+function updateUIForSignedOutUser() {
+  const userSection = document.getElementById('userSection');
+  if (!userSection) return;
+  
+  userSection.innerHTML = `
+    <a href="#" class="material-btn-primary" data-navigate="login">
+      <span class="material-icons mr-1">login</span>
+      Login
+    </a>
+  `;
+  
+  // Hide admin section
+  document.querySelectorAll('[data-navigate="admin"]').forEach(el => {
+    el.classList.add('hidden');
+  });
+  
+  // Make sure navigation still works
+  document.querySelectorAll('[data-navigate]').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      navigateTo(link.getAttribute('data-navigate'));
+    });
+  });
+}
+
+// Sign in with Google
+function signInWithGoogle() {
+  if (!firebaseInitialized) {
+    initializeFirebase();
+  }
+  
+  const provider = new firebase.auth.GoogleAuthProvider();
+  firebase.auth().signInWithPopup(provider)
+    .then((result) => {
+      console.log('Google sign-in successful');
+      // Navigate to home page after successful sign-in
+      navigateTo('home');
+    })
+    .catch((error) => {
+      console.error('Google sign-in error:', error);
+      showToast('Sign-in failed: ' + error.message, 'error');
+    });
+}
+
+// Sign in with email and password
+function signInWithEmail(email, password) {
+  if (!firebaseInitialized) {
+    initializeFirebase();
+  }
+  
+  firebase.auth().signInWithEmailAndPassword(email, password)
+    .then((userCredential) => {
+      console.log('Email sign-in successful');
+      // Navigate to home page after successful sign-in
+      navigateTo('home');
+    })
+    .catch((error) => {
+      console.error('Email sign-in error:', error);
+      showToast('Sign-in failed: ' + error.message, 'error');
+      
+      // Fall back to localStorage authentication if Firebase auth fails
+      signInWithLocalStorage(email, password);
+    });
+}
+
+// Create a new user with email and password
+function createUserWithEmail(name, email, password) {
+  if (!firebaseInitialized) {
+    initializeFirebase();
+  }
+  
+  firebase.auth().createUserWithEmailAndPassword(email, password)
+    .then((userCredential) => {
+      const user = userCredential.user;
+      
+      // Update profile with display name
+      return user.updateProfile({
+        displayName: name
+      }).then(() => {
+        console.log('User created successfully');
+        // Navigate to home page after successful registration
+        navigateTo('home');
+        showToast('Account created successfully!');
+      });
+    })
+    .catch((error) => {
+      console.error('Create user error:', error);
+      showToast('Registration failed: ' + error.message, 'error');
+      
+      // Fall back to local user creation
+      createLocalUser(name, email, password);
+    });
+}
+
+// Sign out 
+function signOut() {
+  if (!firebaseInitialized) {
+    initializeFirebase();
+  }
+  
+  firebase.auth().signOut()
+    .then(() => {
+      console.log('Sign-out successful');
+      clearUserFromLocalStorage();
+      navigateTo('home');
+    })
+    .catch((error) => {
+      console.error('Sign-out error:', error);
+      showToast('Logout failed: ' + error.message, 'error');
+    });
+}
+
+// Initialize firebase on page load
 document.addEventListener('DOMContentLoaded', function() {
-  initFirebase();
+  // Try to initialize Firebase
+  const success = initializeFirebase();
+  
+  // If Firebase initialization failed, check local storage
+  if (!success) {
+    const user = getUserFromLocalStorage();
+    if (user) {
+      updateUIForSignedInUser(user);
+    } else {
+      updateUIForSignedOutUser();
+    }
+  }
 });
-
-// Make Firebase services available globally
-window.FirebaseAuth = FirebaseAuth;
