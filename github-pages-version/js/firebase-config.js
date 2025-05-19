@@ -8,13 +8,14 @@
  */
 
 const firebaseConfig = {
-  apiKey: "YOUR_FIREBASE_API_KEY",
-  authDomain: "YOUR_FIREBASE_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_FIREBASE_PROJECT_ID",
-  storageBucket: "YOUR_FIREBASE_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_FIREBASE_APP_ID",
-  measurementId: "YOUR_MEASUREMENT_ID" // Optional, only if using Google Analytics
+  apiKey: "AIzaSyCao2ih2XM8ZkEUpNrl7qs4AZKgq8eitmM",
+  authDomain: "esports-hp.firebaseapp.com",
+  databaseURL: "https://esports-hp-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "esports-hp",
+  storageBucket: "esports-hp.firebasestorage.app",
+  messagingSenderId: "578218788593",
+  appId: "1:578218788593:web:995d61bdbbfe374bf6cb50",
+  measurementId: "G-ELP77R773B"
 };
 
 // Export the config for use in firebase.js
